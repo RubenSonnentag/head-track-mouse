@@ -1,11 +1,10 @@
 #include "gyro.h"
 
-#include <Mouse.h>
-
 #include "alpakka_math.h"
 #include "head_track_config.h"
 #include "imu.h"
 #include "logging.h"
+#include "mouse_pipeline.h"
 
 namespace {
 
@@ -49,14 +48,6 @@ void gyro_accel_correction() {
     world_top = qrotate(correction, world_top);
     world_right = qrotate(correction, world_right);
     world_fw = vector_cross_product(world_top, world_right);
-  }
-}
-
-void gyro_emit_mouse(double x, double y) {
-  const int8_t move_x = static_cast<int8_t>(clamp_value<long>(lround(x), -127, 127));
-  const int8_t move_y = static_cast<int8_t>(clamp_value<long>(lround(y), -127, 127));
-  if (move_x != 0 || move_y != 0) {
-    Mouse.move(move_x, move_y, 0);
   }
 }
 
@@ -115,6 +106,6 @@ void gyro_report_incremental(bool emit_mouse) {
   }
 
   if (emit_mouse) {
-    gyro_emit_mouse(x, y);
+    mouse_pipeline_add_delta(x, y);
   }
 }

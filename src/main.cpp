@@ -1,10 +1,10 @@
 #include <Arduino.h>
-#include <Mouse.h>
 
 #include "gyro.h"
 #include "head_track_config.h"
 #include "imu.h"
 #include "logging.h"
+#include "mouse_pipeline.h"
 
 namespace {
 
@@ -41,11 +41,13 @@ void activate_after_calibration() {
   log_calibration_step("Start per A2. Bitte ruhig liegen lassen.");
   if (!imu_calibrate()) {
     log_error(F("Kalibrierung fehlgeschlagen."));
+    mouse_pipeline_reset();
     run_state = RunState::Paused;
     log_state_change("paused");
     return;
   }
 
+  mouse_pipeline_reset();
   gyro_reset();
   run_state = RunState::Active;
   log_state_change("active");
@@ -58,6 +60,7 @@ void process_button_action() {
 
   log_button_pressed(run_state == RunState::Active ? "pause requested" : "calibration requested");
   if (run_state == RunState::Active) {
+    mouse_pipeline_reset();
     run_state = RunState::Paused;
     log_state_change("paused");
   } else {
@@ -86,9 +89,10 @@ void setup() {
   log_begin();
 
   pinMode(head_track_config::PIN_BUTTON_A2, INPUT_PULLUP);
-  Mouse.begin();
+  mouse_pipeline_begin();
   gyro_update_sensitivity();
   gyro_set_logging_enabled(true);
+  mouse_pipeline_reset();
   gyro_reset();
 
   log_info(F("head-track-mouse bootet."));
@@ -112,5 +116,6 @@ void loop() {
   if (run_state == RunState::Active && imu_has_calibration() && loop_timer >= head_track_config::LOOP_INTERVAL_US) {
     loop_timer = 0;
     gyro_report_incremental(true);
+    mouse_pipeline_flush();
   }
 }
