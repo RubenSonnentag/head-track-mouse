@@ -1,15 +1,15 @@
 #include <Arduino.h>
 
-#include "joystick/JoystickKeyboard.h"
 #include "logging.h"
 #include "mousemovement/MouseMovement.h"
-#include "sippuff/SipPuffClicks.h"
+#include "mouseclick/MouseClick.h"
+#include "wasdcontrols/WasdControls.h"
 
 namespace {
 
 MouseMovement mouseMovement;
-SipPuffClicks sipPuffClicks;
-JoystickKeyboard joystickKeyboard;
+MouseClick mouseClick;
+WasdControls wasdControls;
 
 }  // namespace
 
@@ -39,16 +39,16 @@ void setup() {
 
   mouseMovement.begin(config);
 
-  SipPuffClicksConfig sip_puff_config{
+  MouseClickConfig mouse_click_config{
       .input_pin = A0,
       .sip_threshold = 640,
       .puff_threshold = 384,
       .neutral_min = 480,
       .neutral_max = 544,
   };
-  sipPuffClicks.setup(sip_puff_config);
+  mouseClick.setup(mouse_click_config);
 
-  JoystickKeyboardConfig joystick_config{
+  WasdControlsConfig wasd_config{
       .x_pin = A1,
       .y_pin = A2,
       .center_x = 512,
@@ -58,11 +58,11 @@ void setup() {
       .deadzone_radius = 64,
       .invert_y = false,
   };
-  joystickKeyboard.setup(joystick_config);
+  wasdControls.setup(wasd_config);
 }
 
 void loop() {
   mouseMovement.process();
-  sipPuffClicks.process();
-  joystickKeyboard.process();
+  mouseClick.process();
+  wasdControls.process();
 }

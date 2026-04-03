@@ -1,4 +1,4 @@
-#include "joystick/JoystickKeyboard.h"
+#include "wasdcontrols/WasdControls.h"
 
 #include <usb_keyboard.h>
 #include <keylayouts.h>
@@ -7,7 +7,7 @@
 
 namespace {
 
-JoystickKeyboardConfig config{};
+WasdControlsConfig config{};
 bool key_w_pressed = false;
 bool key_a_pressed = false;
 bool key_s_pressed = false;
@@ -65,7 +65,7 @@ void build_active_keys(char* buffer, size_t size) {
 
 }  // namespace
 
-void JoystickKeyboard::setup(const JoystickKeyboardConfig& new_config) {
+void WasdControls::setup(const WasdControlsConfig& new_config) {
   config = new_config;
   pinMode(config.x_pin, INPUT);
   pinMode(config.y_pin, INPUT);
@@ -74,12 +74,12 @@ void JoystickKeyboard::setup(const JoystickKeyboardConfig& new_config) {
   key_a_pressed = false;
   key_s_pressed = false;
   key_d_pressed = false;
-  LOG_JOYSTICK_KEYBOARD("setup x=%u y=%u center=(%u,%u) low=%u high=%u deadzone=%u invert_y=%s", config.x_pin,
-                        config.y_pin, config.center_x, config.center_y, config.low_threshold, config.high_threshold,
-                        config.deadzone_radius, config.invert_y ? "true" : "false");
+  LOG_WASD_CONTROLS("setup x=%u y=%u center=(%u,%u) low=%u high=%u deadzone=%u invert_y=%s", config.x_pin,
+                    config.y_pin, config.center_x, config.center_y, config.low_threshold, config.high_threshold,
+                    config.deadzone_radius, config.invert_y ? "true" : "false");
 }
 
-void JoystickKeyboard::process() {
+void WasdControls::process() {
   const uint16_t raw_x = analogRead(config.x_pin);
   const uint16_t raw_y = analogRead(config.y_pin);
 
@@ -103,6 +103,6 @@ void JoystickKeyboard::process() {
   if (changed_a || changed_d || changed_w || changed_s) {
     char active_keys[5];
     build_active_keys(active_keys, sizeof(active_keys));
-    LOG_JOYSTICK_KEYBOARD("keys=%s raw_x=%u raw_y=%u", active_keys, raw_x, raw_y);
+    LOG_WASD_CONTROLS("keys=%s raw_x=%u raw_y=%u", active_keys, raw_x, raw_y);
   }
 }

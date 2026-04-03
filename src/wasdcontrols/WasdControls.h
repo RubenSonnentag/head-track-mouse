@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-struct JoystickKeyboardConfig {
+struct WasdControlsConfig {
   uint8_t x_pin;
   uint8_t y_pin;
   uint16_t center_x;
@@ -13,8 +13,8 @@ struct JoystickKeyboardConfig {
   bool invert_y;
 };
 
-class JoystickKeyboard {
+class WasdControls {
  public:
-  void setup(const JoystickKeyboardConfig& config);
+  void setup(const WasdControlsConfig& config);
   void process();
 };

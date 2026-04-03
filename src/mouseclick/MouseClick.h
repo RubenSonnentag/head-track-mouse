@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-struct SipPuffClicksConfig {
+struct MouseClickConfig {
   uint8_t input_pin;
   uint16_t sip_threshold;
   uint16_t puff_threshold;
@@ -10,8 +10,8 @@ struct SipPuffClicksConfig {
   uint16_t neutral_max;
 };
 
-class SipPuffClicks {
+class MouseClick {
  public:
-  void setup(const SipPuffClicksConfig& config);
+  void setup(const MouseClickConfig& config);
   void process();
 };

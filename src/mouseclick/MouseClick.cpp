@@ -1,4 +1,4 @@
-#include "sippuff/SipPuffClicks.h"
+#include "mouseclick/MouseClick.h"
 
 #include <usb_mouse.h>
 
@@ -12,7 +12,7 @@ enum class SipPuffState : uint8_t {
   Puff,
 };
 
-SipPuffClicksConfig config{};
+MouseClickConfig config{};
 SipPuffState state = SipPuffState::Neutral;
 
 void apply_mouse_buttons(SipPuffState next_state) {
@@ -54,16 +54,16 @@ SipPuffState detect_state(uint16_t raw) {
 
 }  // namespace
 
-void SipPuffClicks::setup(const SipPuffClicksConfig& new_config) {
+void MouseClick::setup(const MouseClickConfig& new_config) {
   config = new_config;
   pinMode(config.input_pin, INPUT);
   state = SipPuffState::Neutral;
   apply_mouse_buttons(state);
-  LOG_SIP_PUFF("setup pin=%u sip>=%u puff<=%u neutral=%u..%u", config.input_pin, config.sip_threshold,
-               config.puff_threshold, config.neutral_min, config.neutral_max);
+  LOG_MOUSE_CLICK("setup pin=%u sip>=%u puff<=%u neutral=%u..%u", config.input_pin, config.sip_threshold,
+                  config.puff_threshold, config.neutral_min, config.neutral_max);
 }
 
-void SipPuffClicks::process() {
+void MouseClick::process() {
   const uint16_t raw = analogRead(config.input_pin);
   const SipPuffState next_state = detect_state(raw);
   if (next_state == state) {
@@ -79,6 +79,6 @@ void SipPuffClicks::process() {
   } else if (state == SipPuffState::Puff) {
     state_name = "puff";
   }
-  LOG_SIP_PUFF("state=%s raw=%u", state_name, raw);
+  LOG_MOUSE_CLICK("state=%s raw=%u", state_name, raw);
 #endif
 }
