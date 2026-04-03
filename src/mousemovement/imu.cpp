@@ -153,7 +153,10 @@ void imu_init_single(uint8_t cs_pin, uint8_t gyro_conf) {
   const uint8_t xl = imu_read_one(cs_pin, IMU_CTRL1_XL);
   const uint8_t g = imu_read_one(cs_pin, IMU_CTRL2_G);
   const bool ok = id == IMU_WHO_AM_I_EXPECTED;
-  log_imu_status(cs_pin, id, xl, g, ok);
+  (void)xl;
+  (void)g;
+  (void)ok;
+  LOG_MM_IMU("cs=%u whoami=0x%02X xl=0x%02X g=0x%02X status=%s", cs_pin, id, xl, g, ok ? "ok" : "fehler");
 }
 
 bool imu_configure_hardware() {
@@ -234,10 +237,10 @@ void imu_calibrate_single(uint8_t index, bool mode_accel, double* x, double* y, 
 
 bool imu_init() {
   calibration_defaults();
-  log_info(F("IMU-Initialisierung startet."));
+  LOG_MM_IMU("IMU-Initialisierung startet.");
   imu_ready = imu_configure_hardware();
   imu_load_calibration();
-  log_infof("IMU ready=%s calibration_loaded=%s", imu_ready ? "true" : "false", calibration_loaded ? "true" : "false");
+  LOG_MM_IMU("IMU ready=%s calibration_loaded=%s", imu_ready ? "true" : "false", calibration_loaded ? "true" : "false");
   return imu_ready;
 }
 
@@ -248,11 +251,11 @@ void imu_load_calibration() {
   if (stored.magic == head_track_config::EEPROM_MAGIC && stored.version == head_track_config::EEPROM_VERSION) {
     calibration = stored;
     calibration_loaded = true;
-    log_info(F("Kalibrierdaten aus EEPROM geladen."));
+    LOG_MM_IMU("Kalibrierdaten aus EEPROM geladen.");
   } else {
     calibration_defaults();
     calibration_loaded = false;
-    log_info(F("Keine gueltigen Kalibrierdaten im EEPROM gefunden."));
+    LOG_MM_IMU("Keine gueltigen Kalibrierdaten im EEPROM gefunden.");
   }
 }
 
@@ -266,13 +269,13 @@ bool imu_has_calibration() {
 
 bool imu_calibrate() {
   if (!imu_ready) {
-    log_error(F("Kalibrierung abgebrochen: IMUs nicht bereit."));
+    LOG_MM_IMU("Kalibrierung abgebrochen: IMUs nicht bereit.");
     return false;
   }
 
   calibration_defaults();
   reset_calibration_runtime();
-  log_calibration_step("Start");
+  LOG_MM_IMU("Kalibrierung: Start");
 
   imu_calibrate_single(0, false, &calibration.offset_gyro_0_x, &calibration.offset_gyro_0_y, &calibration.offset_gyro_0_z);
   imu_calibrate_single(1, false, &calibration.offset_gyro_1_x, &calibration.offset_gyro_1_y, &calibration.offset_gyro_1_z);
@@ -283,7 +286,7 @@ bool imu_calibrate() {
   calibration.version = head_track_config::EEPROM_VERSION;
   persist_calibration();
   calibration_loaded = true;
-  log_calibration_step("Abgeschlossen und gespeichert");
+  LOG_MM_IMU("Kalibrierung: Abgeschlossen und gespeichert");
   return true;
 }
 
@@ -314,9 +317,9 @@ Vector imu_read_accel() {
 }
 
 void imu_print_status() {
-  log_infof("Kalibrierung geladen: %s", calibration_loaded ? "ja" : "nein");
-  log_infof("Gyro0 x=%.2f y=%.2f z=%.2f", calibration.offset_gyro_0_x, calibration.offset_gyro_0_y,
-            calibration.offset_gyro_0_z);
-  log_infof("Gyro1 x=%.2f y=%.2f z=%.2f", calibration.offset_gyro_1_x, calibration.offset_gyro_1_y,
-            calibration.offset_gyro_1_z);
+  LOG_MM_IMU("Kalibrierung geladen: %s", calibration_loaded ? "ja" : "nein");
+  LOG_MM_IMU("Gyro0 x=%.2f y=%.2f z=%.2f", calibration.offset_gyro_0_x, calibration.offset_gyro_0_y,
+             calibration.offset_gyro_0_z);
+  LOG_MM_IMU("Gyro1 x=%.2f y=%.2f z=%.2f", calibration.offset_gyro_1_x, calibration.offset_gyro_1_y,
+             calibration.offset_gyro_1_z);
 }

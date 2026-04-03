@@ -45,21 +45,21 @@ bool handle_button_press() {
 }
 
 void activate_after_calibration() {
-  log_calibration_step("Start per A2. Bitte ruhig liegen lassen.");
+  LOG_MM_CORE("Kalibrierung: Start per A2. Bitte ruhig liegen lassen.");
   run_state = RunState::Calibrating;
-  log_state_change("calibrating");
+  LOG_MM_CORE("State -> calibrating");
   if (!imu_calibrate()) {
-    log_error(F("Kalibrierung fehlgeschlagen."));
+    LOG_MM_CORE("Kalibrierung fehlgeschlagen.");
     mouse_pipeline_reset();
     run_state = RunState::Ready;
-    log_state_change("ready");
+    LOG_MM_CORE("State -> ready");
     return;
   }
 
   mouse_pipeline_reset();
   gyro_reset();
   run_state = RunState::Ready;
-  log_state_change("ready");
+  LOG_MM_CORE("State -> ready");
 }
 
 void process_button_action() {
@@ -67,7 +67,7 @@ void process_button_action() {
     return;
   }
 
-  log_button_pressed("calibration requested");
+  LOG_MM_CORE("Button gedrueckt (calibration requested)");
   activate_after_calibration();
 }
 
@@ -78,10 +78,11 @@ void emit_heartbeat() {
 
   heartbeat_timer = 0;
   const char* state = run_state == RunState::Calibrating ? "calibrating" : "ready";
-  log_infof("heartbeat state=%s imu_ready=%s calibration=%s button=%s touch=%s raw=%u baseline=%u", state,
-            imu_is_ready() ? "true" : "false", imu_has_calibration() ? "true" : "false",
-            digitalRead(config().pins.calibrate_button) == LOW ? "pressed" : "released", touch_active ? "active" : "idle",
-            touch_input_last_raw(), touch_input_baseline());
+  (void)state;
+  LOG_MM_CORE("heartbeat state=%s imu_ready=%s calibration=%s button=%s touch=%s raw=%u baseline=%u", state,
+              imu_is_ready() ? "true" : "false", imu_has_calibration() ? "true" : "false",
+              digitalRead(config().pins.calibrate_button) == LOW ? "pressed" : "released",
+              touch_active ? "active" : "idle", touch_input_last_raw(), touch_input_baseline());
 }
 
 void update_touch_state() {
@@ -93,9 +94,13 @@ void update_touch_state() {
   last_touch_active = touch_active;
   mouse_pipeline_reset();
   if (!touch_active) {
-    log_info(F("Touch aus: Maus angehoben."));
+    LOG_MM_TOUCH("Touch aus: Maus angehoben. raw=%u baseline=%u delta=%d", touch_input_last_raw(),
+                 touch_input_baseline(),
+                 static_cast<int>(touch_input_last_raw()) - static_cast<int>(touch_input_baseline()));
   } else {
-    log_info(F("Touch an: Maus wieder aufgesetzt."));
+    LOG_MM_TOUCH("Touch an: Maus wieder aufgesetzt. raw=%u baseline=%u delta=%d", touch_input_last_raw(),
+                 touch_input_baseline(),
+                 static_cast<int>(touch_input_last_raw()) - static_cast<int>(touch_input_baseline()));
   }
 }
 
@@ -108,19 +113,18 @@ void MouseMovement::begin(const MouseMovementConfig& new_config) {
   touch_input_begin();
   mouse_pipeline_begin();
   gyro_update_sensitivity(config().settings.sensitivity_multiplier);
-  gyro_set_logging_enabled(config().settings.logging_enabled);
   mouse_pipeline_reset();
   gyro_reset();
 
-  log_info(F("head-track-mouse bootet."));
+  LOG_MM_CORE("head-track-mouse bootet.");
   if (imu_init()) {
-    log_info(F("Beide IMUs initialisiert."));
+    LOG_MM_CORE("Beide IMUs initialisiert.");
   } else {
-    log_error(F("IMU-Initialisierung unvollstaendig. Bitte Verkabelung pruefen."));
+    LOG_MM_CORE("IMU-Initialisierung unvollstaendig. Bitte Verkabelung pruefen.");
   }
   imu_print_status();
-  log_info(F("A2 druecken: Kalibrierung starten. Touch steuert Maus an/aus."));
-  log_state_change("ready");
+  LOG_MM_CORE("A2 druecken: Kalibrierung starten. Touch steuert Maus an/aus.");
+  LOG_MM_CORE("State -> ready");
 
   loop_timer = 0;
   heartbeat_timer = 0;
@@ -129,6 +133,12 @@ void MouseMovement::begin(const MouseMovementConfig& new_config) {
 void MouseMovement::process() {
   process_button_action();
   update_touch_state();
+  static elapsedMillis elapsed_since_touch_log;
+  if (elapsed_since_touch_log >= 250) {
+    elapsed_since_touch_log = 0;
+    LOG_MM_TOUCH("active=%s raw=%u baseline=%u delta=%d", touch_active ? "true" : "false", touch_input_last_raw(),
+                 touch_input_baseline(), static_cast<int>(touch_input_last_raw()) - static_cast<int>(touch_input_baseline()));
+  }
   emit_heartbeat();
 
   if (run_state == RunState::Ready && imu_has_calibration() && loop_timer >= config().settings.loop_interval_us) {

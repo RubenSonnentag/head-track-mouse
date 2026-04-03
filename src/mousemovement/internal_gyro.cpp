@@ -18,7 +18,6 @@ Vector world_top{0.0, 0.0, 1.0};
 Vector world_fw{1.0, 0.0, 0.0};
 Vector world_right{0.0, 1.0, 0.0};
 Vector accel_smooth{0.0, 0.0, 0.0};
-bool logging_enabled = true;
 
 double hssnf(double t, double k, double x) {
   const double a = x - (x * k);
@@ -68,15 +67,10 @@ void gyro_update_sensitivity(double multiplier) {
   sensitivity_multiplier = multiplier;
 }
 
-void gyro_set_logging_enabled(bool enabled) {
-  logging_enabled = enabled;
-}
-
 void gyro_report_incremental(bool emit_mouse) {
   gyro_accel_correction();
 
   const Vector imu_gyro = imu_read_gyro();
-  const Vector imu_accel = imu_read_accel();
   double x = imu_gyro.x * head_track_config::GYRO_SENSITIVITY_X * sensitivity_multiplier;
   double y = imu_gyro.y * head_track_config::GYRO_SENSITIVITY_Y * sensitivity_multiplier;
   double z = imu_gyro.z * head_track_config::GYRO_SENSITIVITY_Z * sensitivity_multiplier;
@@ -101,9 +95,16 @@ void gyro_report_incremental(bool emit_mouse) {
   sub_y = modf(y, &y);
   sub_z = modf(z, &z);
 
-  if (logging_enabled) {
-    log_runtime_telemetry(imu_gyro, imu_accel, x, y, emit_mouse);
+#if LOG_ENABLE_MOUSEMOVEMENT_TELEMETRY
+  const Vector imu_accel = imu_read_accel();
+  static elapsedMillis elapsed_since_telemetry_log;
+  if (elapsed_since_telemetry_log >= 250) {
+    elapsed_since_telemetry_log = 0;
+    LOG_MM_TELEMETRY(
+        "mode=%s gyro[x=%.2f y=%.2f z=%.2f] accel[x=%.2f y=%.2f z=%.2f] mouse[x=%.2f y=%.2f]",
+        emit_mouse ? "active" : "paused", imu_gyro.x, imu_gyro.y, imu_gyro.z, imu_accel.x, imu_accel.y, imu_accel.z, x, y);
   }
+#endif
 
   if (emit_mouse) {
     mouse_pipeline_add_delta(x, y);

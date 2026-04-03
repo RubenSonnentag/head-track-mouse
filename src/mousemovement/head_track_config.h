@@ -13,10 +13,13 @@ constexpr uint8_t PIN_IMU_CS1 = 9;
 constexpr uint32_t SERIAL_BAUD = 115200;
 constexpr uint32_t BUTTON_DEBOUNCE_MS = 50;
 constexpr uint32_t LOOP_INTERVAL_US = 4000;
-constexpr uint16_t TOUCH_BASELINE_SAMPLES = 64;
+constexpr uint16_t TOUCH_WARMUP_SAMPLES = 32;
+constexpr uint16_t TOUCH_BASELINE_SAMPLES = 128;
 constexpr uint16_t TOUCH_SAMPLE_TIMEOUT = 400;
-constexpr uint16_t TOUCH_THRESHOLD_OFFSET = 12;
-constexpr uint16_t TOUCH_RELEASE_OFFSET = 6;
+constexpr uint16_t TOUCH_THRESHOLD_OFFSET = 80;
+constexpr uint16_t TOUCH_RELEASE_OFFSET = 40;
+constexpr uint8_t TOUCH_ACTIVATE_STABLE_SAMPLES = 3;
+constexpr uint8_t TOUCH_RELEASE_STABLE_SAMPLES = 3;
 constexpr float TOUCH_BASELINE_BLEND = 0.02f;
 
 constexpr uint16_t IMU_TICK_SAMPLES = 128;

@@ -14,7 +14,6 @@ struct MouseMovementSettings {
   uint32_t button_debounce_ms;
   uint32_t loop_interval_us;
   double sensitivity_multiplier;
-  bool logging_enabled;
 };
 
 struct MouseMovementConfig {

@@ -30,7 +30,6 @@ void setup() {
               .button_debounce_ms = 50,
               .loop_interval_us = 4000,
               .sensitivity_multiplier = 1.0,
-              .logging_enabled = true,
           },
   };
 

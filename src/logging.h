@@ -3,14 +3,31 @@
 #include <Arduino.h>
 
 #include "mousemovement/alpakka_math.h"
+#include "logging_config.h"
 
 void log_begin();
-void log_info(const __FlashStringHelper* message);
-void log_infof(const char* format, ...);
-void log_error(const __FlashStringHelper* message);
-void log_errorf(const char* format, ...);
-void log_button_pressed(const char* context);
-void log_state_change(const char* state);
-void log_calibration_step(const char* step);
-void log_imu_status(uint8_t cs_pin, uint8_t who_am_i, uint8_t ctrl1_xl, uint8_t ctrl2_g, bool ok);
-void log_runtime_telemetry(const Vector& gyro, const Vector& accel, double move_x, double move_y, bool active);
+void log_write(const char* component, const char* format, ...);
+
+#if LOG_ENABLE_MOUSEMOVEMENT_CORE
+#define LOG_MM_CORE(fmt, ...) log_write("mousemovement.core", fmt, ##__VA_ARGS__)
+#else
+#define LOG_MM_CORE(fmt, ...) ((void)0)
+#endif
+
+#if LOG_ENABLE_MOUSEMOVEMENT_IMU
+#define LOG_MM_IMU(fmt, ...) log_write("mousemovement.imu", fmt, ##__VA_ARGS__)
+#else
+#define LOG_MM_IMU(fmt, ...) ((void)0)
+#endif
+
+#if LOG_ENABLE_MOUSEMOVEMENT_TOUCH
+#define LOG_MM_TOUCH(fmt, ...) log_write("mousemovement.touch", fmt, ##__VA_ARGS__)
+#else
+#define LOG_MM_TOUCH(fmt, ...) ((void)0)
+#endif
+
+#if LOG_ENABLE_MOUSEMOVEMENT_TELEMETRY
+#define LOG_MM_TELEMETRY(fmt, ...) log_write("mousemovement.telemetry", fmt, ##__VA_ARGS__)
+#else
+#define LOG_MM_TELEMETRY(fmt, ...) ((void)0)
+#endif

@@ -10,6 +10,8 @@ namespace {
 uint16_t baseline = 0;
 uint16_t last_raw = 0;
 bool touched = false;
+uint8_t activate_streak = 0;
+uint8_t release_streak = 0;
 
 uint16_t sample_touch_raw() {
   const auto& pins = mousemovement_runtime::config().pins;
@@ -35,6 +37,21 @@ void update_baseline(uint16_t raw) {
   baseline = static_cast<uint16_t>((baseline * (1.0f - blend)) + (raw * blend));
 }
 
+uint16_t capture_idle_baseline() {
+  for (uint16_t i = 0; i < head_track_config::TOUCH_WARMUP_SAMPLES; ++i) {
+    sample_touch_raw();
+    delayMicroseconds(50);
+  }
+
+  uint32_t sum = 0;
+  for (uint16_t i = 0; i < head_track_config::TOUCH_BASELINE_SAMPLES; ++i) {
+    sum += sample_touch_raw();
+    delayMicroseconds(50);
+  }
+
+  return static_cast<uint16_t>(sum / head_track_config::TOUCH_BASELINE_SAMPLES);
+}
+
 }  // namespace
 
 void touch_input_begin() {
@@ -43,15 +60,11 @@ void touch_input_begin() {
   digitalWriteFast(pins.touch_send, LOW);
   pinMode(pins.touch_receive, INPUT);
 
-  uint32_t sum = 0;
-  for (uint16_t i = 0; i < head_track_config::TOUCH_BASELINE_SAMPLES; ++i) {
-    sum += sample_touch_raw();
-    delayMicroseconds(50);
-  }
-
-  baseline = static_cast<uint16_t>(sum / head_track_config::TOUCH_BASELINE_SAMPLES);
+  baseline = capture_idle_baseline();
   last_raw = baseline;
   touched = false;
+  activate_streak = 0;
+  release_streak = 0;
 }
 
 bool touch_input_is_active() {
@@ -59,10 +72,32 @@ bool touch_input_is_active() {
 
   if (!touched) {
     update_baseline(last_raw);
-    touched = last_raw > (baseline + head_track_config::TOUCH_THRESHOLD_OFFSET);
+    if (last_raw > (baseline + head_track_config::TOUCH_THRESHOLD_OFFSET)) {
+      if (activate_streak < head_track_config::TOUCH_ACTIVATE_STABLE_SAMPLES) {
+        ++activate_streak;
+      }
+    } else {
+      activate_streak = 0;
+    }
+
+    if (activate_streak >= head_track_config::TOUCH_ACTIVATE_STABLE_SAMPLES) {
+      touched = true;
+      activate_streak = 0;
+      release_streak = 0;
+    }
   } else {
-    touched = last_raw > (baseline + head_track_config::TOUCH_RELEASE_OFFSET);
-    if (!touched) {
+    if (last_raw > (baseline + head_track_config::TOUCH_RELEASE_OFFSET)) {
+      release_streak = 0;
+    } else {
+      if (release_streak < head_track_config::TOUCH_RELEASE_STABLE_SAMPLES) {
+        ++release_streak;
+      }
+    }
+
+    if (release_streak >= head_track_config::TOUCH_RELEASE_STABLE_SAMPLES) {
+      touched = false;
+      release_streak = 0;
+      activate_streak = 0;
       update_baseline(last_raw);
     }
   }
