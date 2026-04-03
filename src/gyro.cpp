@@ -5,6 +5,7 @@
 #include "alpakka_math.h"
 #include "head_track_config.h"
 #include "imu.h"
+#include "logging.h"
 
 namespace {
 
@@ -18,6 +19,7 @@ Vector world_top{0.0, 0.0, 1.0};
 Vector world_fw{1.0, 0.0, 0.0};
 Vector world_right{0.0, 1.0, 0.0};
 Vector accel_smooth{0.0, 0.0, 0.0};
+bool logging_enabled = true;
 
 double hssnf(double t, double k, double x) {
   const double a = x - (x * k);
@@ -75,10 +77,15 @@ void gyro_update_sensitivity(double multiplier) {
   sensitivity_multiplier = multiplier;
 }
 
+void gyro_set_logging_enabled(bool enabled) {
+  logging_enabled = enabled;
+}
+
 void gyro_report_incremental(bool emit_mouse) {
   gyro_accel_correction();
 
   const Vector imu_gyro = imu_read_gyro();
+  const Vector imu_accel = imu_read_accel();
   double x = imu_gyro.x * head_track_config::GYRO_SENSITIVITY_X * sensitivity_multiplier;
   double y = imu_gyro.y * head_track_config::GYRO_SENSITIVITY_Y * sensitivity_multiplier;
   double z = imu_gyro.z * head_track_config::GYRO_SENSITIVITY_Z * sensitivity_multiplier;
@@ -102,6 +109,10 @@ void gyro_report_incremental(bool emit_mouse) {
   sub_x = modf(x, &x);
   sub_y = modf(y, &y);
   sub_z = modf(z, &z);
+
+  if (logging_enabled) {
+    log_runtime_telemetry(imu_gyro, imu_accel, x, y, emit_mouse);
+  }
 
   if (emit_mouse) {
     gyro_emit_mouse(x, y);

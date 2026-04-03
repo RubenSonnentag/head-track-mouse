@@ -23,6 +23,7 @@ struct ImuCalibrationData {
 
 bool imu_init();
 void imu_load_calibration();
+bool imu_is_ready();
 bool imu_has_calibration();
 bool imu_calibrate();
 Vector imu_read_gyro();

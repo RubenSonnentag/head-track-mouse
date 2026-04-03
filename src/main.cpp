@@ -4,6 +4,7 @@
 #include "gyro.h"
 #include "head_track_config.h"
 #include "imu.h"
+#include "logging.h"
 
 namespace {
 
@@ -17,6 +18,7 @@ bool button_state = HIGH;
 bool last_button_reading = HIGH;
 uint32_t last_debounce_time = 0;
 elapsedMicros loop_timer;
+elapsedMillis heartbeat_timer;
 
 bool handle_button_press() {
   const bool reading = digitalRead(head_track_config::PIN_BUTTON_A2);
@@ -36,16 +38,17 @@ bool handle_button_press() {
 }
 
 void activate_after_calibration() {
-  Serial.println("Kalibrierung startet. Bitte ruhig liegen lassen.");
+  log_calibration_step("Start per A2. Bitte ruhig liegen lassen.");
   if (!imu_calibrate()) {
-    Serial.println("Kalibrierung fehlgeschlagen.");
+    log_error(F("Kalibrierung fehlgeschlagen."));
     run_state = RunState::Paused;
+    log_state_change("paused");
     return;
   }
 
   gyro_reset();
   run_state = RunState::Active;
-  Serial.println("Kalibrierung abgeschlossen. Maussteuerung aktiv.");
+  log_state_change("active");
 }
 
 void process_button_action() {
@@ -53,12 +56,24 @@ void process_button_action() {
     return;
   }
 
+  log_button_pressed(run_state == RunState::Active ? "pause requested" : "calibration requested");
   if (run_state == RunState::Active) {
     run_state = RunState::Paused;
-    Serial.println("Maussteuerung pausiert.");
+    log_state_change("paused");
   } else {
     activate_after_calibration();
   }
+}
+
+void emit_heartbeat() {
+  if (heartbeat_timer < 1000) {
+    return;
+  }
+
+  heartbeat_timer = 0;
+  log_infof("heartbeat state=%s imu_ready=%s calibration=%s button=%s", run_state == RunState::Active ? "active" : "paused",
+            imu_is_ready() ? "true" : "false", imu_has_calibration() ? "true" : "false",
+            digitalRead(head_track_config::PIN_BUTTON_A2) == LOW ? "pressed" : "released");
 }
 
 }  // namespace
@@ -68,26 +83,31 @@ void setup() {
   while (!Serial && millis() < 4000) {
     delay(10);
   }
+  log_begin();
 
   pinMode(head_track_config::PIN_BUTTON_A2, INPUT_PULLUP);
   Mouse.begin();
   gyro_update_sensitivity();
+  gyro_set_logging_enabled(true);
   gyro_reset();
 
-  Serial.println("head-track-mouse bootet.");
+  log_info(F("head-track-mouse bootet."));
   if (imu_init()) {
-    Serial.println("Beide IMUs initialisiert.");
+    log_info(F("Beide IMUs initialisiert."));
   } else {
-    Serial.println("IMU-Initialisierung unvollstaendig. Bitte Verkabelung pruefen.");
+    log_error(F("IMU-Initialisierung unvollstaendig. Bitte Verkabelung pruefen."));
   }
   imu_print_status();
-  Serial.println("A2 druecken: kalibrieren und aktivieren. Danach erneut druecken: pausieren.");
+  log_info(F("A2 druecken: kalibrieren und aktivieren. Danach erneut druecken: pausieren."));
+  log_state_change("paused");
 
   loop_timer = 0;
+  heartbeat_timer = 0;
 }
 
 void loop() {
   process_button_action();
+  emit_heartbeat();
 
   if (run_state == RunState::Active && imu_has_calibration() && loop_timer >= head_track_config::LOOP_INTERVAL_US) {
     loop_timer = 0;

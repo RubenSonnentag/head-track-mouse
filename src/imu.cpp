@@ -4,6 +4,7 @@
 #include <SPI.h>
 
 #include "head_track_config.h"
+#include "logging.h"
 
 namespace {
 
@@ -90,9 +91,17 @@ double* accel_offset_base(uint8_t index) {
 }
 
 Vector apply_alpakka_v1_gyro_orientation(int16_t raw_x, int16_t raw_y, int16_t raw_z, double* offset) {
-  const double x = -static_cast<double>(raw_z) - offset[0];
-  const double y = -static_cast<double>(raw_x) - offset[1];
-  const double z = -static_cast<double>(raw_y) - offset[2];
+  // Sensorlage:
+  // raw_x -> links
+  // raw_y -> oben
+  // raw_z -> Bildschirm
+  // Interne Lage:
+  // x -> rechts
+  // y -> oben
+  // z -> Bildschirm
+  const double x = -static_cast<double>(raw_x) - offset[0];
+  const double y = -static_cast<double>(raw_y) - offset[1];
+  const double z = static_cast<double>(raw_z) - offset[2];
   return {x, y, z};
 }
 
@@ -141,11 +150,8 @@ void imu_init_single(uint8_t cs_pin, uint8_t gyro_conf) {
   imu_write_one(cs_pin, IMU_CTRL2_G, gyro_conf);
   const uint8_t xl = imu_read_one(cs_pin, IMU_CTRL1_XL);
   const uint8_t g = imu_read_one(cs_pin, IMU_CTRL2_G);
-
-  Serial.printf("IMU cs=%u whoami=0x%02X xl=0x%02X g=0x%02X\r\n", cs_pin, id, xl, g);
-  if (id != IMU_WHO_AM_I_EXPECTED) {
-    Serial.printf("IMU on cs=%u antwortet unerwartet.\r\n", cs_pin);
-  }
+  const bool ok = id == IMU_WHO_AM_I_EXPECTED;
+  log_imu_status(cs_pin, id, xl, g, ok);
 }
 
 bool imu_configure_hardware() {
@@ -225,8 +231,10 @@ void imu_calibrate_single(uint8_t index, bool mode_accel, double* x, double* y, 
 
 bool imu_init() {
   calibration_defaults();
+  log_info(F("IMU-Initialisierung startet."));
   imu_ready = imu_configure_hardware();
   imu_load_calibration();
+  log_infof("IMU ready=%s calibration_loaded=%s", imu_ready ? "true" : "false", calibration_loaded ? "true" : "false");
   return imu_ready;
 }
 
@@ -237,10 +245,16 @@ void imu_load_calibration() {
   if (stored.magic == head_track_config::EEPROM_MAGIC && stored.version == head_track_config::EEPROM_VERSION) {
     calibration = stored;
     calibration_loaded = true;
+    log_info(F("Kalibrierdaten aus EEPROM geladen."));
   } else {
     calibration_defaults();
     calibration_loaded = false;
+    log_info(F("Keine gueltigen Kalibrierdaten im EEPROM gefunden."));
   }
+}
+
+bool imu_is_ready() {
+  return imu_ready;
 }
 
 bool imu_has_calibration() {
@@ -249,12 +263,13 @@ bool imu_has_calibration() {
 
 bool imu_calibrate() {
   if (!imu_ready) {
-    Serial.println("Kalibrierung abgebrochen: IMUs nicht bereit.");
+    log_error(F("Kalibrierung abgebrochen: IMUs nicht bereit."));
     return false;
   }
 
   calibration_defaults();
   reset_calibration_runtime();
+  log_calibration_step("Start");
 
   imu_calibrate_single(0, false, &calibration.offset_gyro_0_x, &calibration.offset_gyro_0_y, &calibration.offset_gyro_0_z);
   imu_calibrate_single(1, false, &calibration.offset_gyro_1_x, &calibration.offset_gyro_1_y, &calibration.offset_gyro_1_z);
@@ -265,6 +280,7 @@ bool imu_calibrate() {
   calibration.version = head_track_config::EEPROM_VERSION;
   persist_calibration();
   calibration_loaded = true;
+  log_calibration_step("Abgeschlossen und gespeichert");
   return true;
 }
 
@@ -295,9 +311,9 @@ Vector imu_read_accel() {
 }
 
 void imu_print_status() {
-  Serial.printf("Kalibrierung geladen: %s\r\n", calibration_loaded ? "ja" : "nein");
-  Serial.printf("Gyro0 x=%.2f y=%.2f z=%.2f\r\n", calibration.offset_gyro_0_x, calibration.offset_gyro_0_y,
-                calibration.offset_gyro_0_z);
-  Serial.printf("Gyro1 x=%.2f y=%.2f z=%.2f\r\n", calibration.offset_gyro_1_x, calibration.offset_gyro_1_y,
-                calibration.offset_gyro_1_z);
+  log_infof("Kalibrierung geladen: %s", calibration_loaded ? "ja" : "nein");
+  log_infof("Gyro0 x=%.2f y=%.2f z=%.2f", calibration.offset_gyro_0_x, calibration.offset_gyro_0_y,
+            calibration.offset_gyro_0_z);
+  log_infof("Gyro1 x=%.2f y=%.2f z=%.2f", calibration.offset_gyro_1_x, calibration.offset_gyro_1_y,
+            calibration.offset_gyro_1_z);
 }

@@ -4,7 +4,7 @@
 
 namespace head_track_config {
 
-constexpr uint8_t PIN_BUTTON_A2 = A2;
+constexpr uint8_t PIN_BUTTON_A2 = 1;
 constexpr uint8_t PIN_IMU_CS0 = 10;
 constexpr uint8_t PIN_IMU_CS1 = 9;
 
