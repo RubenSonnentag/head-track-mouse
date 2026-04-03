@@ -31,3 +31,15 @@ void log_write(const char* component, const char* format, ...);
 #else
 #define LOG_MM_TELEMETRY(fmt, ...) ((void)0)
 #endif
+
+#if LOG_ENABLE_SIP_PUFF
+#define LOG_SIP_PUFF(fmt, ...) log_write("sippuff", fmt, ##__VA_ARGS__)
+#else
+#define LOG_SIP_PUFF(fmt, ...) ((void)0)
+#endif
+
+#if LOG_ENABLE_JOYSTICK_KEYBOARD
+#define LOG_JOYSTICK_KEYBOARD(fmt, ...) log_write("joystickkeyboard", fmt, ##__VA_ARGS__)
+#else
+#define LOG_JOYSTICK_KEYBOARD(fmt, ...) ((void)0)
+#endif
