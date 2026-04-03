@@ -1,10 +1,11 @@
-#include "imu.h"
+#include "mousemovement/imu.h"
 
 #include <EEPROM.h>
 #include <SPI.h>
 
-#include "head_track_config.h"
 #include "logging.h"
+#include "mousemovement/head_track_config.h"
+#include "mousemovement/runtime_config.h"
 
 namespace {
 
@@ -45,7 +46,8 @@ bool calibration_loaded = false;
 bool imu_ready = false;
 
 uint8_t cs_pin_for_index(uint8_t index) {
-  return index == 0 ? head_track_config::PIN_IMU_CS0 : head_track_config::PIN_IMU_CS1;
+  const auto& pins = mousemovement_runtime::config().pins;
+  return index == 0 ? pins.imu_cs0 : pins.imu_cs1;
 }
 
 void spi_select(uint8_t cs_pin) {
@@ -155,17 +157,18 @@ void imu_init_single(uint8_t cs_pin, uint8_t gyro_conf) {
 }
 
 bool imu_configure_hardware() {
-  pinMode(head_track_config::PIN_IMU_CS0, OUTPUT);
-  pinMode(head_track_config::PIN_IMU_CS1, OUTPUT);
-  digitalWriteFast(head_track_config::PIN_IMU_CS0, HIGH);
-  digitalWriteFast(head_track_config::PIN_IMU_CS1, HIGH);
+  const auto& pins = mousemovement_runtime::config().pins;
+  pinMode(pins.imu_cs0, OUTPUT);
+  pinMode(pins.imu_cs1, OUTPUT);
+  digitalWriteFast(pins.imu_cs0, HIGH);
+  digitalWriteFast(pins.imu_cs1, HIGH);
 
   SPI.begin();
-  imu_init_single(head_track_config::PIN_IMU_CS0, IMU_CTRL2_G_500);
-  imu_init_single(head_track_config::PIN_IMU_CS1, IMU_CTRL2_G_125);
+  imu_init_single(pins.imu_cs0, IMU_CTRL2_G_500);
+  imu_init_single(pins.imu_cs1, IMU_CTRL2_G_125);
 
-  const bool ok0 = imu_read_one(head_track_config::PIN_IMU_CS0, IMU_WHO_AM_I) == IMU_WHO_AM_I_EXPECTED;
-  const bool ok1 = imu_read_one(head_track_config::PIN_IMU_CS1, IMU_WHO_AM_I) == IMU_WHO_AM_I_EXPECTED;
+  const bool ok0 = imu_read_one(pins.imu_cs0, IMU_WHO_AM_I) == IMU_WHO_AM_I_EXPECTED;
+  const bool ok1 = imu_read_one(pins.imu_cs1, IMU_WHO_AM_I) == IMU_WHO_AM_I_EXPECTED;
   return ok0 && ok1;
 }
 

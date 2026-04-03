@@ -1,4 +1,4 @@
-#include "alpakka_math.h"
+#include "mousemovement/alpakka_math.h"
 
 Vector vector_normalize(Vector v) {
   const double mag_sq = (v.x * v.x) + (v.y * v.y) + (v.z * v.z);

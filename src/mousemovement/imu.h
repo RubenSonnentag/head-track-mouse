@@ -1,7 +1,7 @@
 #pragma once
 
 #include <Arduino.h>
-#include "alpakka_math.h"
+#include "mousemovement/alpakka_math.h"
 
 struct ImuCalibrationData {
   uint32_t magic;

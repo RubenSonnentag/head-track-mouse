@@ -1,10 +1,10 @@
-#include "gyro.h"
+#include "mousemovement/internal_gyro.h"
 
-#include "alpakka_math.h"
-#include "head_track_config.h"
-#include "imu.h"
+#include "mousemovement/alpakka_math.h"
+#include "mousemovement/head_track_config.h"
+#include "mousemovement/imu.h"
 #include "logging.h"
-#include "mouse_pipeline.h"
+#include "mousemovement/mouse_pipeline.h"
 
 namespace {
 

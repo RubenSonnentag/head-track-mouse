@@ -2,7 +2,7 @@
 
 #include <Arduino.h>
 
-#include "alpakka_math.h"
+#include "mousemovement/alpakka_math.h"
 
 void log_begin();
 void log_info(const __FlashStringHelper* message);

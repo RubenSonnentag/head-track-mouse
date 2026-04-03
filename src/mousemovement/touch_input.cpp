@@ -1,8 +1,9 @@
-#include "touch_input.h"
+#include "mousemovement/touch_input.h"
 
 #include <Arduino.h>
 
-#include "head_track_config.h"
+#include "mousemovement/head_track_config.h"
+#include "mousemovement/runtime_config.h"
 
 namespace {
 
@@ -11,21 +12,21 @@ uint16_t last_raw = 0;
 bool touched = false;
 
 uint16_t sample_touch_raw() {
-  digitalWriteFast(head_track_config::PIN_TOUCH_SEND, LOW);
-  pinMode(head_track_config::PIN_TOUCH_RECEIVE, OUTPUT);
-  digitalWriteFast(head_track_config::PIN_TOUCH_RECEIVE, LOW);
+  const auto& pins = mousemovement_runtime::config().pins;
+  digitalWriteFast(pins.touch_send, LOW);
+  pinMode(pins.touch_receive, OUTPUT);
+  digitalWriteFast(pins.touch_receive, LOW);
   delayMicroseconds(5);
 
-  pinMode(head_track_config::PIN_TOUCH_RECEIVE, INPUT);
-  digitalWriteFast(head_track_config::PIN_TOUCH_SEND, HIGH);
+  pinMode(pins.touch_receive, INPUT);
+  digitalWriteFast(pins.touch_send, HIGH);
 
   uint16_t count = 0;
-  while (digitalReadFast(head_track_config::PIN_TOUCH_RECEIVE) == LOW &&
-         count < head_track_config::TOUCH_SAMPLE_TIMEOUT) {
+  while (digitalReadFast(pins.touch_receive) == LOW && count < head_track_config::TOUCH_SAMPLE_TIMEOUT) {
     ++count;
   }
 
-  digitalWriteFast(head_track_config::PIN_TOUCH_SEND, LOW);
+  digitalWriteFast(pins.touch_send, LOW);
   return count;
 }
 
@@ -37,9 +38,10 @@ void update_baseline(uint16_t raw) {
 }  // namespace
 
 void touch_input_begin() {
-  pinMode(head_track_config::PIN_TOUCH_SEND, OUTPUT);
-  digitalWriteFast(head_track_config::PIN_TOUCH_SEND, LOW);
-  pinMode(head_track_config::PIN_TOUCH_RECEIVE, INPUT);
+  const auto& pins = mousemovement_runtime::config().pins;
+  pinMode(pins.touch_send, OUTPUT);
+  digitalWriteFast(pins.touch_send, LOW);
+  pinMode(pins.touch_receive, INPUT);
 
   uint32_t sum = 0;
   for (uint16_t i = 0; i < head_track_config::TOUCH_BASELINE_SAMPLES; ++i) {

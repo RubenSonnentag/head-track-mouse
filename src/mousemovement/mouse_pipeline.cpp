@@ -1,9 +1,9 @@
-#include "mouse_pipeline.h"
+#include "mousemovement/mouse_pipeline.h"
 
 #include <Arduino.h>
 
-#include "alpakka_math.h"
-#include "teensy_mouse16.h"
+#include "mousemovement/alpakka_math.h"
+#include "mousemovement/teensy_mouse16.h"
 
 namespace {
 
